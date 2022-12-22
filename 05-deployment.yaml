@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-proxy
+  namespace: nginx-proxy
+  labels:
+    app: nginx-proxy
+    test: test
+spec:
+  selector:
+    matchLabels:
+      app: nginx-proxy
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: nginx-proxy
+    spec:
+      containers:
+      - name: nginx-proxy
+        image: nginx:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        - containerPort: 443
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 40
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        volumeMounts:
+        - mountPath: "/data"
+          name: nginx-proxy-pv-storage
+      volumes:
+      - name: nginx-proxy-pv-storage
+        persistentVolumeClaim:
+          claimName: nginx-proxy-pv-claim
+      - name: secret-volume
+        secret:
+          secretName: app-mysecret
+      - name: config-volume
+        configMap:
+          name: app-config
